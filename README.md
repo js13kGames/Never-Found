@@ -4,6 +4,8 @@ This is my entry for the 2020 js13k Javascript game jam.
 
 ![Screenshot](https://github.com/robinlamb/NeverFound/blob/master/assets/images/NeverFound_screenshot1.png)
 
+## Click [here](https://js13kgames.com/entries/never-found) to play the game.
+
 You are an archaeologist who has found the crypt of Phor-oh IV, an ancient king long lost to history.  According to the recently deciphered ancient text that led you to the crypt, it contains a locked room with a vast treasure.  
 
 The game is inspired by the old Atari game "Haunted House", where you could only see the player's eyes in the dark.  It uses the [Ga game framework](https://github.com/kittykatattack/ga), and it uses [ZzFX](https://github.com/KilledByAPixel/ZzFX) for all the sound effects.  I made the sprites with Piskel.
