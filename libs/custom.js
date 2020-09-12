@@ -1,4 +1,3 @@
-// player.vy = 0;
 // ==ClosureCompiler==
 // @output_file_name default.js
 // @compilation_level SIMPLE_OPTIMIZATIONS
@@ -6,6 +5,8 @@
 // @fileoverview
 // @suppress {checkTypes | globalThis | checkVars}
 // ==/ClosureCompiler==
+
+//This is the file with the Ga game framework plugins that I am using. 
 
 GA.custom = function(ga) {
 
