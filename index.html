@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="monetization" content="$ilp.uphold.com/wXFRdBhaxWXw">
+    <meta charset="UTF-8">
+    <title>Never Found</title>
+
+  </head>
+
+  <style>
+    body {
+      background: black;
+    }
+
+  </style>
+
+  <body>
+    <script src="libs/ga.js"></script>
+    <script src="libs/zzfx.js"></script>
+    <script src="libs/custom.js"></script>
+
+    <script>
+    //Create ga game instance and load in images
+    var g = ga(512, 512, setup,
+      [
+        "assets/images/eyes.png",
+        "assets/images/evileyes.png",
+        "assets/images/key.png"
+      ]
+    );
+    g.start();
+
+    //Make game fullscreen
+    g.scaleToWindow("black");
+
+    //Required variables
+    var player, key, keyFound, door, hitWall, hitDoor, keySprite, controlsEnabled = true, key_x, key_y,
+    door_x, door_y, which_wall, ghost1, ghost2, ghost_speed = .5, ghost1_dir = -1, gameOver, level_num = 1,
+    txtTitle, txtPlay, txtChallenge, txtCoilMsg, txtWinLose, txtPlayAgain, txtLevel,  gameWon,
+    p = g.keyboard(80), c = g.keyboard(67), isTitleScreen = true, ghost2_dir = 1, ghost3_dir = 1, ghost4_dir = -1,
+    ghost3, ghost4, inChallengeMode = false, isCoilSubscriber = false, ghost5, ghost5_dir = -1;
+
+
+    //Helper functions
+
+    //Function to find a random location to place the key
+    function placeKey(){
+        //Generate a random location in the screen space, not to close to a wall
+        key_x = g.randomInt(10, 492);
+        key_y = g.randomInt(10, 433);
+
+        //Find another random location if it is too close to the player
+        while ((key_x > 88 && key_x < 184) && (key_y > 176 && key_y < 304)){
+            key_x = g.randomInt(10, 492);
+            key_y = g.randomInt(10, 433);
+          }
+      }
+
+
+        //Function to find random location to place the door along the wall
+      function placeDoor(){
+        which_wall = g.randomInt(1, 4);
+
+        //Set which door the wall will be on based on the random number and give it
+        //a random location on that wall
+        switch (which_wall) {
+          case 1:
+            door_x = 0;
+            door_y = g.randomInt(0, 416);
+            break;
+          case 2:
+            door_x = 480;
+            door_y = g.randomInt(0, 416);
+            break;
+          case 3:
+            door_x = g.randomInt(0, 480);
+            door_y = 0;
+            break;
+
+          default:
+            door_x = g.randomInt(0, 480);
+            door_y = 416;
+        }
+
+      }
+
+    //Play footstep sound effect with zzfx
+    function playFootstep(){
+      zzfx(...[,,1109,.02,,.09,4,.01,.7,,660,.03,.33,.6,,.1,.48,.11,.01]); // Footstep
+    }
+
+    //Function to check if the player is colliding with the door, and whether the player
+    //has found the key to play the correct sound.  If the player has the key, the round
+    //will be over.
+    function checkHitWall() {
+      if (hitWall){
+        zzfx(...[,,116,,.07,.13,4,2.81,-6.2,-4.4,,,,1.4,,.2,.16,.77,.03]); // Hit wall
+        hitWall = false;
+      }
+      if (hitDoor && !keyFound) {
+        zzfx(...[,,114,,.03,.25,2,2.64,,-2.6,,,,.8,,.3,,.99,.09,.21]); // locked door
+        hitDoor = false;
+      }
+    }
+
+
+    function resetGame(){
+      //Starting set up of each level.  Find door and key location with helper functions
+      controlsEnabled = true;
+      gameScene.visible = true;
+      gameTitle.visible = false;
+      win_lose.visible = false;
+      hitDoor = false;
+      hitWall = false;
+
+      gameOver = false;
+      gameWon = false;
+      keyFound = false;
+      keySprite.visible = false;
+      placeKey();
+      d_key.setPosition(key_x, key_y);
+      placeDoor();
+      door.setPosition(door_x, door_y);
+      ghost1_dir = -1;
+      ghost1.setPosition(10, 150);
+      ghost1.vy =  ghost_speed * ghost1_dir;
+
+      ghost2_dir = 1;
+      ghost2.setPosition(470, 400);
+      ghost2.vy = ghost_speed * ghost2_dir;
+
+      ghost3_dir = 1;
+      ghost3.setPosition(100, 400);
+      ghost3.vx = ghost_speed * ghost3_dir;
+
+      ghost4_dir = -1;
+      ghost4.setPosition(400, 0);
+      ghost4.vx = ghost_speed * ghost4_dir;
+
+      if (inChallengeMode){
+        ghost5_dir = -1;
+        ghost5.setPosition(300, 300);
+        ghost5.vx = 1.5 * ghost5_dir;
+
+        }
+        else {
+          ghost5.vx = 0;
+        }
+
+      player.playSequence(player.states.up_down);
+      player.loop = true;
+      player.setPosition(120, 240);
+      player.vx = 0;
+      player.vy = 0;
+
+      zzfx(...[,,608,.24,.33,.8,1,1.89,,1.1,128,.08,.27,,-0.2,.1,,.43,.06,.47]); //Ghostly sound
+
+      txtLevel.content = "LEVEL: " + level_num;
+
+    }
+
+
+    //Setup game, sprites, and player controls
+    function setup() {
+      g.backgroundColor = "black"
+
+
+      //Create scenes for organization
+      gameScene = g.group();
+      gameTitle = g.group();
+      win_lose = g.group();
+
+      //Create rectangular sprites for the door and key and make them invisible by
+      //setting their color to black.  Find their positions with the helper functions
+      d_key = g.rectangle(10, 15, "black");
+
+      gameScene.add(d_key);
+
+      keySprite = g.sprite("assets/images/key.png");
+      keySprite.setPosition(480, 448);
+
+      gameScene.add(keySprite);
+
+      door = g.rectangle(32, 32, "black");
+      gameScene.add(door);
+
+      //Setup text sprites
+      txtTitle = g.text("NEVER FOUND", "45px sans-serif", "white", 60, 100);
+      gameTitle.add(txtTitle);
+
+      txtPlay = g.text(" ", "15px sans-serif", "white", 150, 300);
+      gameTitle.add(txtPlay);
+
+      txtChallenge = g.text(" ", "15px sans-serif", "white", 75, 350);
+      gameTitle.add(txtChallenge);
+
+      txtCoilMsg = g.text(" ", "12px sans-serif", "white", 100, 450);
+      gameTitle.add(txtCoilMsg);
+
+      txtLevel = g.text(" ", "16px sans-serif", "white", 10, 455);
+      gameScene.add(txtLevel);
+
+      txtWinLose = g.text("YOU LOSE!", "32px sans-serif", "white", 120, 200);
+      win_lose.add(txtWinLose);
+
+      txtPlayAgain = g.text("PRESS  C  TO CONTINUE PLAYING.", "16px sans-serif", "white", 100, 350);
+      win_lose.add(txtPlayAgain);
+
+
+
+      //Set up frames, sprites, and positions for ghosts
+      var ghostFrames = g.frames("assets/images/evileyes.png", [[0,0], [32,0],[0,32], [32,32], [0,64]], 32, 32);
+      ghost1 = g.sprite(ghostFrames);
+      ghost1.fps = 1;
+      ghost1.play();
+      ghost1.setPosition(10, 150);
+
+      gameScene.add(ghost1);
+
+      ghost2 = g.sprite(ghostFrames);
+      ghost2.fps = 1.4;
+      ghost2.play();
+      ghost2.setPosition(470, 400);
+
+      ghost3 = g.sprite(ghostFrames);
+      ghost3.fps = 1.2;
+      ghost3.play();
+      ghost3.setPosition(100, 400);
+
+      ghost4 = g.sprite(ghostFrames);
+      ghost4.fps = 1.3;
+      ghost4.play();
+      ghost4.setPosition(400, 0);
+
+      ghost5 = g.sprite(ghostFrames);
+      ghost5.fps = 1.1;
+      ghost5.play();
+      ghost5.setPosition(-500, -500);
+
+      //Set up sprite and frames for player
+      var playerFrames = g.filmstrip("assets/images/eyes.png", 32, 32);
+      player = g.sprite(playerFrames);
+      player.setPosition(120,240);
+      player.states = {
+        left: [0,1],
+        right: [2,3],
+        up_down: [4,5],
+        die: [6,8]
+      }
+
+      player.fps = 2;
+      player.playSequence(player.states.up_down);
+
+      //Assign key `press` methods
+      p.press = function(){
+        if (isTitleScreen){
+          isTitleScreen = false;
+          resetGame();
+        }
+      }
+      c.press = function(){
+
+        if (isTitleScreen  && isCoilSubscriber) {
+          ghost_speed = 1.0;
+          inChallengeMode = true;
+          resetGame();
+          isTitleScreen = false;
+        }
+        if (gameOver) {
+          if (gameWon) {
+            level_num += 1;
+
+            if (ghost_speed < 2.5) {
+                ghost_speed += .25;
+          }
+        }
+        else {
+            level_num = 1;
+
+            if (inChallengeMode){
+                ghost_speed = 1.0;
+            }
+            else { ghost_speed = .5;
+            }
+          }
+          resetGame();
+        }
+      };
+        g.key.leftArrow.press = function() {
+          if (controlsEnabled){
+            playFootstep();
+            player.playSequence(player.states.left);
+            player.vx = -2;
+            player.vy = 0;
+            checkHitWall();
+        }
+        };
+        g.key.leftArrow.release = function() {
+          if (controlsEnabled){
+            if (!g.key.rightArrow.isDown && player.vy === 0) {
+              player.vx = 0;
+            }
+          }
+        };
+        g.key.upArrow.press = function() {
+          if (controlsEnabled){
+            playFootstep();
+            player.playSequence(player.states.up_down);
+            player.vy = -2;
+            player.vx = 0;
+            checkHitWall();
+          }
+        };
+        g.key.upArrow.release = function() {
+          if (controlsEnabled){
+            if (!g.key.downArrow.isDown && player.vx === 0) {
+              player.vy = 0;
+            }
+          }
+        };
+        g.key.rightArrow.press = function() {
+          if (controlsEnabled){
+            playFootstep();
+            player.playSequence(player.states.right);
+            player.vx = 2;
+            player.vy = 0;
+            checkHitWall();
+          }
+
+        };
+        g.key.rightArrow.release = function() {
+          if (controlsEnabled) {
+            if (!g.key.leftArrow.isDown && player.vy === 0) {
+              player.vx = 0;
+            }
+          }
+        };
+        g.key.downArrow.press = function() {
+          if (controlsEnabled) {
+            playFootstep();
+            player.playSequence(player.states.up_down);
+            player.vy = 2;
+            player.vx = 0;
+            checkHitWall();
+          }
+
+        };
+        g.key.downArrow.release = function() {
+          if (controlsEnabled) {
+            if (!g.key.upArrow.isDown && player.vx === 0) {
+              player.vy = 0;
+            }
+          }
+        };
+      gameScene.add(player);
+      gameTitle.visible = true;
+      win_lose.visible = false;
+      controlsEnabled = false;
+
+      //Coil monetization and appropriate messages
+      if (document.monetization) {
+      document.monetization.addEventListener('monetizationstart', () => {
+        isCoilSubscriber = true;
+        txtPlay.content = "PRESS P TO PLAY IN NORMAL MODE";
+        txtPlay.x = 100;
+        txtChallenge.content = "PRESS  C  TO PLAY IN CHALLENGING MODE!";
+        txtCoilMsg.x = 150;
+        txtCoilMsg.content = "THANKS FOR YOUR SUPPORT, COIL SUBSCRIBER!";
+        })
+      }
+      else {
+        txtPlay.content = "PRESS P TO PLAY";
+      }
+
+      keySprite.visible = false;
+      g.state = play;
+
+  }
+
+  function play() {
+
+    //Contain player in screen space
+    player.x = Math.max(0, Math.min(player.x + player.vx, g.canvas.width - player.width));
+    player.y = Math.max(0, Math.min(player.y + player.vy, g.canvas.height - (player.height * 3)));
+
+    ghost1.y += ghost1.vy;
+
+    //Reverse the ghost when it reaches end of path
+    if ((ghost1.y <= 0) || (ghost1.y >= 416)){
+      ghost1.vy *= -1;
+    }
+
+    ghost2.y += ghost2.vy;
+
+    //Reverse the ghost when it reaches end of path
+    if ((ghost2.y <= 0) || (ghost2.y >= 416)){
+      ghost2.vy *= -1;
+    }
+
+    ghost3.x += ghost3.vx;
+
+    //Reverse the ghost when it reaches end of path
+    if ((ghost3.x <= 40) || (ghost3.x >= 400)){
+      ghost3.vx *= -1;
+    }
+
+    ghost4.x += ghost4.vx;
+
+    //Reverse the ghost when it reaches end of path
+    if ((ghost4.x <= 95) || (ghost4.x >= 401)){
+      ghost4.vx *= -1;
+    }
+
+    if (inChallengeMode) {
+      ghost5.x += ghost5.vx;
+      ghost5.y += ghost5.vy;
+    }
+    if (ghost5.x <= 95){
+      ghost5.vx *= -1;
+      ghost5.y = 100;
+      }
+   if (ghost5.x >= 301)  {
+      ghost5.vx *= -1;
+      ghost5.y = 300;
+      }
+
+
+
+    //Collision with ghost
+    if ((g.hitTestRectangle(player, ghost1)) || (g.hitTestRectangle(player, ghost2)) || (g.hitTestRectangle(player, ghost3)) ||
+      (g.hitTestRectangle(player, ghost4)) || (g.hitTestRectangle(player, ghost5))){
+      controlsEnabled = false;
+      player.vx = 0;
+      player.vy = 0;
+
+      if (!gameOver){
+        zzfx(...[,,970,.34,.49,.64,2,1.84,,,-35,.04,.29,,.2,,,.88,.04]); // Lose
+        player.loop = false;
+        player.playSequence(player.states.die);
+        gameOver = true;
+        gameWon = false;
+        player.vx = 0;
+        player.vy = 0;
+        txtWinLose.x = 130;
+        txtWinLose.font = "32px sans-serif"
+        txtWinLose.content = "YOU LOSE!"
+        win_lose.visible = true;
+      }
+
+    }
+    var pickupKey = false;
+
+    if (player.x == (g.canvas.width - player.width) || player.x == 0 || player.y == 0 || player.y == (g.canvas.height - (player.height * 3))){
+      if (g.hitTestRectangle(player, door)){
+
+        hitDoor = true;
+        if (keyFound){
+          if (!gameOver){
+            zzfx(...[,,1510,,.01,,2,1.83,,,254,.1,,.1,,,,.62,.05,.01]); // Open door
+            gameWon = true;
+            gameOver = true;
+            controlsEnabled = false,
+            player.vx = 0;
+            player.vy = 0;
+            ghost1.vy = 0;
+            ghost2.vy = 0;
+            ghost3.vx = 0;
+            ghost4.vx = 0;
+            ghost5.vx = 0;
+            txtWinLose.x = 50;
+            txtWinLose.font = "20px sans-serif"
+            txtWinLose.content = "YOU FOUND PHOR-OH IV'S TREASURE!";
+            win_lose.visible = true;
+            zzfx(...[,,542,.45,.21,.38,2,1.57,-0.1,,523,.03,.12,,,,.07,.69,.07]); //
+
+        }
+      }
+    }
+
+      else {
+        hitWall = true;
+      }
+  }
+
+    if (g.hitTestRectangle(player, d_key)){
+        pickupKey = true;
+    }
+
+    if (pickupKey){
+      if (!keyFound){
+        zzfx(...[,,1778,,.03,.24,,1.63,,,698,.05,,.1,,,.07,.78,.02,.11]); // Get key
+      }
+      keyFound = true;
+      keySprite.visible = true;
+    }
+
+}
+
+    </script>
+  </body>
+</html>
