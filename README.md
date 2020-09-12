@@ -1,4 +1,4 @@
-# NeverFound
+# Never Found
 
 This is my entry for the 2020 js13k Javascript game jam.
 
